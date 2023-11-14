@@ -2,15 +2,15 @@ import { useState } from 'react';
 import './SearchResults.css';
 import { MouseEvent, useEffect } from 'react';
 import SearchForm from '../SearchForm/SearchForm';
-import TimePickerValue from '../TimePickerValue/TimePickerValue';
-import DatePickerValue from '../DatePickerValue/DatePickerValue';
-import NumberOfPerson from '../NumberOfPerson/NumberOfPerson';
 import SearchInput from '../SearchFormInput/SearchInput';
 import SearchBtn from '../SearchFormBtn/SearchBtn';
 import RestCard from '../RestCard/RestCard';
 import FilterMenu from '../FilterMenu/FilterMenu';
 import { Restaurant } from '../../utils/constants';
 import { formatRating } from '../../utils/formatRating';
+import { Button } from '@mui/material';
+import TuneIcon from '@mui/icons-material/Tune';
+import ClearIcon from '@mui/icons-material/Clear';
 
 interface SearchResultsProps {
 	searchEstablishments: Restaurant[];
@@ -40,6 +40,12 @@ function SearchResults({
 	const [selectedServiceFilters, setSelectedServiceFilters] = useState<
 		string[]
 	>([]);
+	const [areFiltersSelected, setAreFiltersSelected] = useState(false);
+	const numberOfFilters =
+		selectedKitchenFilters.length +
+		selectedTypeFilters.length +
+		(selectedCheckFilters ? 1 : 0) +
+		selectedServiceFilters.length;
 
 	useEffect(() => {
 		setMainArr(searchEstablishments);
@@ -90,11 +96,20 @@ function SearchResults({
 	};
 
 	useEffect(() => {
+		const anyFiltersSelected =
+			selectedKitchenFilters.length > 0 ||
+			selectedTypeFilters.length > 0 ||
+			selectedCheckFilters !== null ||
+			selectedServiceFilters.length > 0;
+
+		setAreFiltersSelected(anyFiltersSelected);
+
 		// Фильтрация по кухне
 		const kitchenFilteredRestaurants = mainArr.filter((restaurant) => {
 			if (selectedKitchenFilters.length === 0) {
 				return true;
 			}
+
 			return restaurant.kitchens.some((kitchen) =>
 				selectedKitchenFilters.includes(kitchen)
 			);
@@ -127,12 +142,7 @@ function SearchResults({
 			);
 		});
 
-		if (
-			selectedKitchenFilters.length > 0 ||
-			selectedTypeFilters.length > 0 ||
-			selectedCheckFilters !== null ||
-			selectedServiceFilters.length > 0
-		) {
+		if (anyFiltersSelected) {
 			// Объединение результатов фильтрации
 			const combinedFilteredRestaurants = typeFilteredRestaurants.filter(
 				(restaurant) =>
@@ -145,6 +155,7 @@ function SearchResults({
 		} else {
 			setMainArr(searchEstablishments);
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		selectedKitchenFilters,
 		selectedTypeFilters,
@@ -159,20 +170,88 @@ function SearchResults({
 
 	return (
 		<section className="search-results">
-			<div className="search-results__bg-box">
-				<SearchForm onSubmit={onSubmit}>
-					<div className="search-results__flex-box">
-						<DatePickerValue />
-						<TimePickerValue />
-					</div>
-					<NumberOfPerson />
+			<div
+				className={`search-results__bg-box ${
+					isSearching ? 'search-results__bg-box_none' : ''
+				}`}
+			>
+				{!isSearching && (
+					<h2 className="search-results__title">Найди свой стол</h2>
+				)}
+				<SearchForm isSearching={isSearching} onSubmit={onSubmit}>
 					<SearchInput
 						handleFilterClick={handleToggleFilterBtn}
 						query={query}
 						setQuery={setQuery}
 						isSearching={isSearching}
 					/>
-					<SearchBtn />
+					{isSearching && (
+						<div className="search-results__box-filters">
+							{/* <button
+								type="button"
+								className="search-input__filter-btn"
+								onClick={handleToggleFilterBtn}
+							>
+								Фильтры
+							</button> */}
+							<Button
+								variant={areFiltersSelected ? 'contained' : 'outlined'}
+								onClick={handleToggleFilterBtn}
+								sx={{
+									textTransform: 'none',
+									borderRadius: '8px',
+									minWidth: `${areFiltersSelected ? 'fit-content' : '100%'}`,
+									maxHeight: '32px',
+									borderColor: '#006C60',
+									p: '5px 10px',
+									color: '#49454F',
+									backgroundColor: `${
+										areFiltersSelected ? '#E4F4F1' : 'transparent'
+									}`,
+								}}
+								startIcon={<TuneIcon />}
+							>
+								{`Фильтры ${numberOfFilters > 0 ? `(${numberOfFilters})` : ''}`}
+							</Button>
+							{areFiltersSelected && (
+								// <button
+								// 	type="button"
+								// 	onClick={handleResetFilters}
+								// 	className="search-results__reset-filters"
+								// >
+								// 	Сбросить фильтры
+								// </button>
+								<Button
+									variant="outlined"
+									onClick={handleResetFilters}
+									sx={{
+										textTransform: 'none',
+										borderRadius: '8px',
+										maxWidth: 'max-content',
+										maxHeight: '32px',
+										borderColor: '#006C60',
+										color: '#49454F',
+										p: '5px 10px',
+									}}
+									endIcon={<ClearIcon />}
+								>
+									Сбросить фильтры
+								</Button>
+							)}
+						</div>
+					)}
+					{/* <SearchBtn /> */}
+					<Button
+						variant="contained"
+						sx={{
+							backgroundColor: '#c41a68',
+							textTransform: 'none',
+							borderRadius: '8px',
+							minHeight: '40px',
+						}}
+					>
+						Искать
+					</Button>
 				</SearchForm>
 				<FilterMenu
 					isOpen={isOpen}
@@ -189,14 +268,13 @@ function SearchResults({
 			</div>
 			{isSearching && (
 				<div className="search-results__cards-container">
-					<h2 id="search-results" className="search-results__title">
+					<h2 id="search-results" className="search-results__title_results">
 						Результаты поиска
 					</h2>
 					<p className="search-results__find-items">
 						Найдено {mainArr.length} заведений
 					</p>
-					{/* <button className='search-input__filter-btn'></button> */}
-					{/* <button onClick={handleResetFilters}>Сбросить фильтры</button> */}
+
 					<ul className="search-results__list">
 						{mainArr.map((restaurant: Restaurant, index: number) => (
 							<RestCard
